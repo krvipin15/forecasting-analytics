@@ -1,0 +1,160 @@
+[project]
+name = "forecasting-analytics"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE*"]
+authors = [{ name = "Vipin Kumar", email = "krvipin15@tutamail.com" }]
+requires-python = ">=3.12,<3.13"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: POSIX :: Linux",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Framework :: FastAPI",
+    "Framework :: Pydantic",
+    "Framework :: Pytest",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[dependency-groups]
+dev = ["pre-commit>=4.7.0", "ruff>=0.17.3", "ty>=0.0.95"]
+test = ["pytest>=9.2.0", "pytest-cov>=7.1.0"]
+
+[project.scripts]
+forecasting-analytics = "forecasting_analytics:main"
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
+
+[project.urls]
+"Source" = "https://github.com/krvipin15/forecasting-analytics"
+"Bug Reports" = "https://github.com/krvipin15/forecasting-analytics/issues"
+
+[tool.ty.environment]
+python = ".venv"
+python-platform = "linux"
+python-version = "3.12"
+root = ["."]
+
+[tool.ty.terminal]
+output-format = "concise"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "A",    # flake8-builtins
+    "ARG",  # flake8-unused-arguments
+    "B",    # flake8-bugbear
+    "BLE",  # Blind except
+    "C4",   # flake8-comprehensions
+    "D",    # docstrings
+    "DTZ",  # flake8-datetimez
+    "E",    # pycodestyle errors
+    "ERA",  # eradicate (commented-out code)
+    "F",    # pyflakes
+    "FBT",  # Boolean traps
+    "G",    # Logging format
+    "I",    # isort
+    "N",    # pep8-naming
+    "PERF", # perflint
+    "PL",   # pylint
+    "PTH",  # flake8-use-pathlib
+    "RET",  # flake8-return
+    "RUF",  # Ruff-specific rules
+    "S",    # flake8-bandit (basic security)
+    "SIM",  # flake8-simplify
+    "T20",  # flake8-print
+    "UP",   # pyupgrade
+    "W",    # pycodestyle warnings
+]
+ignore = [
+    "E501",    # line too long
+    "PLR0912", # too many branches
+    "PLR0913", # too many arguments
+    "S311",    # pseudo-random generator
+    "N803",    # argument name lowercase
+    "N806",    # variable name lowercase
+    "N815",    # variable in class scope mixedCase
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/forecasting_analytics/config/settings.py" = ["N802", "S104"]
+"src/forecasting_analytics/config/logger.py" = ["FBT003"]
+"notebooks/*.ipynb" = ["T201"]
+"tests/**/*.py" = ["ARG001", "PLR2004", "S101"]
+
+[tool.ruff.format]
+docstring-code-format = true
+indent-style = "space"
+quote-style = "double"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+combine-as-imports = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.pylint]
+max-statements = 60
+
+[tool.pytest.ini_options]
+env = ["ENVIRONMENT=testing"]
+testpaths = ["tests"]
+pythonpath = ["."]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "--cov=forecasting_analytics",
+    "--cov-fail-under=85",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=xml",
+    "-ra",
+]
+markers = [
+    "integration: tests requiring external services",
+    "unit: fast, isolated unit tests",
+    "e2e: end-to-end ML pipeline tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = [
+    "*/__init__.py",
+    "*/conftest.py",
+    "tests/*",
+    "src/forecasting_analytics/config/logger.py",
+    "src/forecasting_analytics/config/settings.py",
+    "src/forecasting_analytics/data/schemas.py",
+    "src/forecasting_analytics/__main__.py ",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "@abstractmethod",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "pragma: no cover",
+    "raise NotImplementedError",
+]
+fail_under = 85
+show_missing = true
+skip_covered = false

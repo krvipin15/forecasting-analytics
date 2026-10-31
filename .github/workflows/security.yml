@@ -1,0 +1,104 @@
+---
+name: Security Analysis
+
+# Triggers
+"on":
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+  schedule:
+    - cron: "30 4 * * 1"
+  workflow_dispatch:
+
+# Concurrency guard
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Restrict GITHUB_TOKEN to least privilege
+permissions:
+  contents: read
+
+# Global environment variables
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # Job 1: Static Application Security Testing (SAST via CodeQL)
+  codeql-analysis:
+    name: CodeQL Code Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["actions", "python"]
+
+    steps:
+      # 1. Checkout the repo history
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      # 2. Initialize CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+
+      # 3. Perform CodeQL Analysis
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+        with:
+          category: "/language:${{matrix.language}}"
+
+  # Job 2: Open Source Dependency Vulnerability Audit (OSV & uv)
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      # 1. Checkout full repo history
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # 2. Install uv
+      - name: Install uv
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      # 3. Install OSV-Scanner
+      - name: Install osv-scanner
+        run: |
+          curl -fsSL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o /usr/local/bin/osv-scanner
+          chmod +x /usr/local/bin/osv-scanner
+
+      # 4. Audit dependencies for CVEs
+      - name: Audit dependencies for CVEs
+        continue-on-error: true
+        run: |
+          osv-scanner scan \
+            --lockfile uv.lock \
+            --format sarif \
+            --output-file results.sarif
+
+      # 5. Upload to GitHub Security Tab
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+        with:
+          sarif_file: results.sarif
+          category: osv-scanner
